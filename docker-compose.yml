@@ -1,0 +1,45 @@
+version: '3.4'
+
+services:
+  mongo:
+    image: mongo:4.0.3
+    container_name: mongo
+    hostname: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - /home/ayla/dev/celery_tests/db:/data/db
+
+  rabbit:
+    image: rabbitmq:3.7.8-management
+    container_name: rabbit
+    hostname: rabbit
+    ports:
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+
+  celery_worker:
+    build:
+      context: .
+      target: worker
+    container_name: celery_worker
+    depends_on:
+      - mongo
+      - rabbit
+    links:
+      - mongo
+      - rabbit
+    command: worker -A tasks -l debug
+
+  celery_test:
+    build:
+      context: .
+      target: task_runner
+    container_name: celery_test
+    depends_on:
+      - celery_worker
+    links:
+      - mongo
+      - rabbit
+      - celery_worker
